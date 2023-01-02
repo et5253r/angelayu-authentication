@@ -4,8 +4,9 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const mongoose = require("mongoose");
+const md5 = require("md5")
 const app = express();
-const encrypt = require("mongoose-encryption")
+
 
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
@@ -20,9 +21,6 @@ const userSchema = new mongoose.Schema({
   email: String,
   password: String
 });
-// *****------------- LEVEL 2 Environment Variables   --------------------------------
-//console.log(process.env.SECRET) -> prints out the SECRET from .env file
-userSchema.plugin(encrypt, {secret: process.env.SECRET, encryptedFields: ["password"]}); // has to be here BEFORE Model is created bcos Model takes in userSchema properties.
 
 const User = new mongoose.model("User", userSchema);
 
@@ -43,15 +41,13 @@ app.get("/login", function(req, res){
 
 
 
-
-
-
 // ------------------app.post ----------------------------------------
 app.post("/register", function(req, res){
   // Create new user Document
   const newUser = new User({
     email: req.body.username,
-    password: req.body.password
+// ************** LEVEL 3 HASH FUNCTION ******************************
+    password: md5(req.body.password) // put md5("password") to turn into hash
   });
   newUser.save(function(err){
     if (!err){
@@ -65,7 +61,7 @@ app.post("/register", function(req, res){
 app.post("/login", function(req, res){
   // Check if user exists
   const username = req.body.username
-  const password = req.body.password
+  const password = md5(req.body.password) // will return the same hash as above 
   User.findOne({email: username}, function(err, foundUser){
     if (foundUser) {
       if (foundUser.password === password) {
